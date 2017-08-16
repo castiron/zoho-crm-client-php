@@ -97,9 +97,9 @@ class InsertRecords extends AbstractRequest
      */
     public function request()
     {
-        if(count($this->records) < 2) {
-            $this->request->setParam('version', 2);
-        }
+//        if(count($this->records) < 2) {
+//            $this->request->setParam('version', 2);
+//        }
 
         return $this->request
             ->setParam('xmlData', $this->records)
