@@ -2,7 +2,6 @@
 namespace CristianPontes\ZohoCRMClient\Transport;
 
 use CristianPontes\ZohoCRMClient\Exception;
-use CristianPontes\ZohoCRMClient\Request\ConvertLead;
 use CristianPontes\ZohoCRMClient\Response;
 use CristianPontes\ZohoCRMClient\ZohoError;
 
@@ -16,7 +15,7 @@ class XmlDataTransportDecorator extends AbstractTransportDecorator
     /** @var string */
     private $module;
     /** @var string */
-    private $method;
+    protected $method;
     /** @var array */
     private $call_params;
 
@@ -41,49 +40,25 @@ class XmlDataTransportDecorator extends AbstractTransportDecorator
         $this->method = $method;
         $this->call_params = $paramList;
 
-        if ($this->method == 'convertLead') {
-            $paramList['xmlData'] = $this->encodeRequestConvertLead($paramList);
-        } else {
-            if (array_key_exists('xmlData', $paramList)) {
-                $paramList['xmlData'] = $this->encodeRecords($paramList['xmlData']);
-            }
+        if ($xmlData = $this->encodeRequest($paramList)) {
+            $paramList['xmlData'] = $xmlData;
         }
 
         $response = $this->transport->call($module, $method, $paramList);
-
         return $this->parse($response);
     }
 
     /**
-     * 
-     * @param array $paramList
-     * @return string XML representation of the records
+     * @param $paramList
+     * @return string
      */
-    private function encodeRequestConvertLead(array $paramList)
+    protected function encodeRequest($paramList)
     {
-        $root = new SimpleXMLElement('<Potentials></Potentials>');
-        $options = array();
-
-        // row 1 (options)
-        foreach (ConvertLead::getOptionFields() as $optionName) {
-            if (isset($paramList[$optionName])) {
-                $options[$optionName] = $paramList[$optionName];
-            }
-        }
-        $row = $root->addChild('row');
-        $row->addAttribute('no', 1);
-        $this->encodeRecord($options, 'option', $row);
-
-        // row 2 (data)
         if (array_key_exists('xmlData', $paramList)) {
-            $record = $paramList['xmlData'];
-            if ($record) {
-                $row = $root->addChild('row');
-                $row->addAttribute('no', 2);
-                $this->encodeRecord($record, 'FL', $row);
-            }
+            return $this->encodeRecords($paramList['xmlData']);
         }
-        return $root->asXML();
+
+        return '';
     }
 
     /**
@@ -91,7 +66,7 @@ class XmlDataTransportDecorator extends AbstractTransportDecorator
      * @throws \CristianPontes\ZohoCRMClient\Exception\RuntimeException
      * @return string XML representation of the records
      */
-    private function encodeRecords(array $records)
+    protected function encodeRecords(array $records)
     {
         $module = $this->method == 'updateRelatedRecords' ?
                 $this->call_params['relatedModule'] : $this->module;
@@ -114,7 +89,7 @@ class XmlDataTransportDecorator extends AbstractTransportDecorator
      * @param string $childName XML node name
      * @param SimpleXMLElement $xml
      */
-    private function encodeRecord($record, $childName, &$xml)
+    protected function encodeRecord($record, $childName, &$xml)
     {
         foreach ($record as $key => $value)
         {

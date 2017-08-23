@@ -4,6 +4,7 @@ namespace CristianPontes\ZohoCRMClient\Client;
 
 use Buzz\Browser;
 use Buzz\Client\Curl;
+use CristianPontes\ZohoCRMClient\Exception\Exception;
 use CristianPontes\ZohoCRMClient\Transport;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
@@ -23,29 +24,53 @@ abstract class AbstractZohoClient implements LoggerAwareInterface
 
     /**
      * ZohoCRMClient constructor.
-     * @param $module
-     * @param $authToken
-     * @param string $domain
-     * @param int $timeout
+     * @param $options
+     * @option $module
+     * @option $authToken
+     * @option string $domain
+     * @option int $timeout
      */
-    public function __construct($module, $authToken, $domain = 'com', $timeout = 5)
+    public function __construct($options = [])
     {
-        $this->module = $module;
+        $this->validateOptions($options);
 
-        if ($authToken instanceof Transport\Transport) {
-            $this->transport = $authToken;
+        $this->module = $options['module'];
+
+        if ($options['transport'] instanceof Transport\Transport) {
+            $this->transport = $options['transport'];
         } else {
-            $curl_client = new Curl();
-            $curl_client->setTimeout($timeout);
-            $this->transport = new Transport\XmlDataTransportDecorator(
-                new Transport\AuthenticationTokenTransportDecorator(
-                    $authToken,
-                    new Transport\BuzzTransport(
-                        new Browser($curl_client),
-                        $this->apiUrl($domain)
-                    )
-                )
+            $browser = $this->initBrowser(
+                $options['timeout'] ?: 5
             );
+            $this->transport = $this->initTransport(
+                $options['authToken'],
+                $options['domain'] ?: 'com',
+                $browser
+            );
+        }
+    }
+
+    /**
+     * @return array
+     */
+    protected function requiredOptions() {
+        return array(
+            'module',
+        );
+    }
+
+    /**
+     * @param $options
+     * @throws Exception
+     */
+    protected function validateOptions($options) {
+        if (!$options['authToken'] && !$options['transport']) {
+            throw new Exception('You must provide either a transport or authToken parameter');
+        }
+        foreach ($this->requiredOptions() as $option) {
+            if (!$options[$option]) {
+                throw new Exception('You must provide the ' . $option . ' parameter');
+            }
         }
     }
 
@@ -55,6 +80,43 @@ abstract class AbstractZohoClient implements LoggerAwareInterface
      * @param string $domain
      */
     abstract protected function apiUrl($domain = 'com');
+
+    /**
+     * @param $timeout
+     * @return Browser
+     */
+    protected function initBrowser($timeout)
+    {
+        $curl_client = new Curl();
+        $curl_client->setTimeout($timeout);
+        return new Browser($curl_client);
+    }
+
+    /**
+     * Sets the Zoho CRM module, overriding the the actual value
+     * @param $module
+     */
+    public function setModule($module)
+    {
+        $this->module = $module;
+    }
+
+    /**
+     * @param $authToken
+     * @param $domain
+     * @param Browser $browser
+     * @return Transport\Transport
+     */
+    protected function initTransport($authToken, $domain, Browser $browser)
+    {
+        return new Transport\AuthenticationTokenTransportDecorator(
+            $authToken,
+            new Transport\BuzzTransport(
+                $browser,
+                $this->apiUrl($domain)
+            )
+        );
+    }
 
     /**
      * Sets a logger instance on the object

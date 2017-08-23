@@ -2,7 +2,9 @@
 
 namespace CristianPontes\ZohoCRMClient\Client;
 
+use Buzz\Browser;
 use CristianPontes\ZohoCRMClient\Request;
+use CristianPontes\ZohoCRMClient\Transport;
 
 /**
  * Class ZohoCRMClient
@@ -20,12 +22,15 @@ class ZohoCRMClient extends AbstractZohoClient
     }
 
     /**
-     * Sets the Zoho CRM module, overriding the the actual value
-     * @param $module
+     * @param $authToken
+     * @param $domain
+     * @param Browser $browser
+     * @return Transport\Transport
      */
-    public function setModule($module)
+    protected function initTransport($authToken, $domain, Browser $browser)
     {
-        $this->module = $module;
+        $transport = parent::initTransport($authToken, $domain, $browser);
+        return new Transport\CrmTransportDecorator($transport);
     }
 
     /**

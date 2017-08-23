@@ -2,6 +2,7 @@
 namespace CristianPontes\ZohoCRMClient\Tests\Request;
 
 use CristianPontes\ZohoCRMClient\Request;
+use CristianPontes\ZohoCRMClient\Transport\CrmTransportDecorator;
 use CristianPontes\ZohoCRMClient\Transport\MockTransport;
 use CristianPontes\ZohoCRMClient\Transport\TransportRequest;
 use CristianPontes\ZohoCRMClient\Transport\XmlDataTransportDecorator;
@@ -97,10 +98,9 @@ class ConvertLeadTest extends \PHPUnit_Framework_TestCase
     {
         $this->request = new TransportRequest('Leads');
         $this->mockTransport = new MockTransport();
-        $this->transport = new XmlDataTransportDecorator($this->mockTransport);
+        $this->transport = new CrmTransportDecorator($this->mockTransport);
         $this->request->setTransport($this->transport);
 
         $this->convertLead = new Request\ConvertLead($this->request);
     }
 }
- 

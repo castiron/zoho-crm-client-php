@@ -1,11 +1,14 @@
 <?php
-namespace CristianPontes\ZohoCRMClient\Tests;
+namespace CristianPontes\ZohoCRMClient\Tests\Client;
 
-use CristianPontes\ZohoCRMClient\Request\GetRecords;
-use CristianPontes\ZohoCRMClient\Transport\MockLoggerAwareTransport;
-use CristianPontes\ZohoCRMClient\ZohoCRMClient;
+use CristianPontes\ZohoCRMClient\Client\ZohoCRMClient;
 use CristianPontes\ZohoCRMClient\Tests\SingleMessageLogger;
+use CristianPontes\ZohoCRMClient\Transport\MockLoggerAwareTransport;
 
+/**
+ * Class ZohoCRMClientTest
+ * @package CristianPontes\ZohoCRMClient\Tests
+ */
 class ZohoCRMClientTest extends \PHPUnit_Framework_TestCase
 {
     /** @var MockLoggerAwareTransport */
@@ -14,23 +17,17 @@ class ZohoCRMClientTest extends \PHPUnit_Framework_TestCase
     /** @var mockZohoCRMClient */
     private $client;
 
-    public function testGetRecords()
-    {
-        $request = $this->client->getRecords()
-            ->selectColumns('id', 'name')
-            ->fromIndex(100)
-            ->toIndex(200)
-            ->sortBy('name')
-            ->sortAsc()
-            ->since(date_create('now'));
-
-        $this->assertTrue($request instanceof GetRecords);
-    }
-
     public function testSetModule()
     {
         $this->client->setModule('Contacts');
         $this->assertEquals('Contacts', $this->client->publicRequest()->getModule());
+    }
+
+    public function testGetRecords()
+    {
+        $request = $this->client->getRecords();
+
+        $this->assertInstanceOf('CristianPontes\ZohoCRMClient\Request\GetRecords', $request);
     }
 
     public function testGetRecordById()
@@ -145,11 +142,21 @@ class ZohoCRMClientTest extends \PHPUnit_Framework_TestCase
     protected function setUp()
     {
         $this->transport = new MockLoggerAwareTransport();
-        $this->client = new mockZohoCRMClient('Leads', $this->transport);
+        $this->client = new mockZohoCRMClient(array(
+            'module' => 'Leads',
+            'transport' => $this->transport
+        ));
     }
 }
 
+/**
+ * Class mockZohoCRMClient
+ * @package CristianPontes\ZohoCRMClient\Tests
+ */
 class mockZohoCRMClient extends ZohoCRMClient {
+    /**
+     * @return \CristianPontes\ZohoCRMClient\Transport\TransportRequest
+     */
     public function publicRequest()
     {
         return $this->request();
